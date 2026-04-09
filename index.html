@@ -142,7 +142,22 @@ function renderLog(){const b=document.getElementById("logbox");b.textContent=LL.
 async function tryFetch(url){
   // Plain fetch, no AbortSignal (causes cloning error in some sandboxes)
   log("GET "+url);
-  const r=await fetch(url);
+  async function tryFetch(url){
+  log("GET "+url);
+  try {
+    const r=await fetch(url);
+    log("  → HTTP "+r.status);
+    if(!r.ok)throw new Error("HTTP "+r.status);
+    return r.json();
+  } catch(e) {
+    log("  suora fail: "+e.message+", proxy...");
+    const proxy="https://corsproxy.io/?"+encodeURIComponent(url);
+    log("  PROXY "+proxy);
+    const r2=await fetch(proxy);
+    if(!r2.ok)throw new Error("HTTP "+r2.status);
+    return r2.json();
+  }
+}
   log("  → HTTP "+r.status);
   if(!r.ok)throw new Error("HTTP "+r.status);
   return r.json();
