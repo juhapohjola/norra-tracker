@@ -1,1 +1,292 @@
-Kirjoitettucat
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>N°RRA Fleet Tracker</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Space+Grotesk:wght@400;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'IBM Plex Mono',monospace;background:#07090f;color:#cbd5e1;min-height:100vh}
+header{background:linear-gradient(180deg,#0d1f3c,#07090f);border-bottom:1px solid #1e2d3d;padding:18px 20px 14px}
+.htop{display:flex;justify-content:space-between;align-items:flex-start}
+.title{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:#f1f5f9}
+.subtitle{font-size:10px;color:#334155;letter-spacing:2px;text-transform:uppercase;margin-top:3px}
+.ts{font-size:10px;color:#334155;text-align:right}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#22c55e;margin-right:4px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+main{padding:16px 20px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.stat{background:#0d1117;border:1px solid #1e2d3d;border-radius:10px;padding:12px 14px;text-align:center}
+.sn{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700}
+.sl{font-size:9px;color:#334155;margin-top:3px;text-transform:uppercase;letter-spacing:1px}
+.toolbar{display:flex;gap:8px;margin-bottom:13px;flex-wrap:wrap;align-items:center}
+.btn{background:#0d1117;border:1px solid #1e2d3d;color:#64748b;border-radius:6px;padding:5px 12px;font-family:inherit;font-size:11px;cursor:pointer;transition:all .15s}
+.btn:hover{border-color:#334155;color:#94a3b8}.btn.on{background:#1e3a5f;border-color:#2563eb;color:#93c5fd}
+.btn:disabled{opacity:.45;cursor:default}
+.err{background:#1a0808;border:1px solid #7f1d1d;border-radius:8px;padding:8px 12px;font-size:11px;color:#fca5a5;margin-bottom:10px;word-break:break-word}
+.logbox{background:#050a14;border:1px solid #1e2d3d;border-radius:8px;padding:10px 12px;font-size:10px;color:#4ade80;white-space:pre-wrap;word-break:break-all;margin-bottom:10px;max-height:160px;overflow-y:auto;line-height:1.6}
+.loading{text-align:center;padding:50px 0;color:#334155;font-size:12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{font-size:28px;animation:spin 1s linear infinite;margin-bottom:10px;display:block}
+.count{font-size:9px;color:#334155;margin-bottom:9px;text-transform:uppercase;letter-spacing:1.5px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+.card{background:#0d1117;border:1px solid #1e2d3d;border-radius:10px;padding:13px 15px;cursor:pointer;transition:border-color .15s,background .15s;user-select:none}
+.card:hover{border-color:#2563eb;background:#0f1623}.card.sel{border-color:#38bdf8;background:#0a1929}
+.ctop{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.creg{font-weight:700;font-size:14px;color:#f1f5f9;letter-spacing:1.5px}
+.ctype{font-size:10px;color:#334155;margin-top:2px}
+.cst{display:flex;align-items:center;gap:6px}
+.ccs{font-size:10px;color:#475569;margin-top:4px}
+.layout{display:flex;gap:14px}
+.listcol{flex:1;min-width:0}
+.detcol{width:220px;flex-shrink:0}
+.panel{background:#0a1929;border:1px solid #38bdf8;border-radius:10px;padding:15px;position:sticky;top:14px}
+.dr{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #1e2d3d;font-size:11px}
+.dr:last-child{border:none}
+.nosig{color:#475569;font-size:11px;line-height:1.7;padding:8px 0}
+.fr24btn{display:block;margin-top:13px;text-align:center;background:#ea580c;color:#fff;border-radius:7px;padding:7px 0;font-size:11px;font-weight:700;text-decoration:none}
+footer{margin-top:18px;font-size:10px;color:#1e2d3d;text-align:center;padding-bottom:20px}
+@media(max-width:520px){.stats{grid-template-columns:repeat(2,1fr)}.layout{flex-direction:column}.detcol{width:100%}}
+</style>
+</head>
+<body>
+<header>
+  <div class="htop">
+    <div><div class="title">N&#xb0;RRA Fleet Tracker</div><div class="subtitle">Nordic Regional Airlines &middot; 24 konetta</div></div>
+    <div class="ts" id="ts"></div>
+  </div>
+</header>
+<main>
+  <div class="stats">
+    <div class="stat"><div class="sn" id="sn-t" style="color:#94a3b8">24</div><div class="sl">Laivasto</div></div>
+    <div class="stat"><div class="sn" id="sn-a" style="color:#4ade80">-</div><div class="sl">Lennossa</div></div>
+    <div class="stat"><div class="sn" id="sn-h" style="color:#38bdf8">-</div><div class="sl">Helsinki-Vantaa</div></div>
+    <div class="stat"><div class="sn" id="sn-n" style="color:#475569">-</div><div class="sl">Ei signaalia</div></div>
+  </div>
+  <div class="toolbar">
+    <button class="btn on" data-f="all" onclick="setF(this)">Kaikki</button>
+    <button class="btn" data-f="air" onclick="setF(this)">&#x25b2; Lennossa</button>
+    <button class="btn" data-f="hel" onclick="setF(this)">&#x2708; HEL</button>
+    <button class="btn" data-f="gnd" onclick="setF(this)">&#x25a0; Maassa</button>
+    <div style="margin-left:auto;display:flex;gap:8px">
+      <button class="btn" id="rbtn" onclick="doRefresh()">&#x21bb; Paivita</button>
+      <button class="btn" id="dbtn" onclick="toggleDbg()">Debug</button>
+    </div>
+  </div>
+  <div class="err" id="errbox" style="display:none"></div>
+  <div class="logbox" id="logbox" style="display:none"></div>
+  <div class="loading" id="loading"><span class="spinner">&#x21bb;</span>Haetaan dataa...</div>
+  <div id="content" style="display:none">
+    <div class="layout">
+      <div class="listcol"><div class="count" id="cnt"></div><div class="grid" id="grid"></div></div>
+      <div class="detcol" id="detcol" style="display:none">
+        <div class="panel">
+          <div style="display:flex;justify-content:space-between;margin-bottom:11px">
+            <div>
+              <div style="font-weight:700;font-size:18px;color:#f1f5f9;letter-spacing:1px" id="d-reg"></div>
+              <div style="font-size:10px;color:#475569;margin-top:2px" id="d-type"></div>
+            </div>
+            <button class="btn" style="height:24px;padding:0 8px" onclick="closeD()">X</button>
+          </div>
+          <div id="d-rows"></div>
+          <a class="fr24btn" id="d-fr24" target="_blank" rel="noreferrer">Avaa FR24 &#x2192;</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <footer>ADS-B: adsb.lol &amp; OpenSky Network</footer>
+</main>
+<script>
+var FLEET=[
+  {reg:"OH-ATE",type:"ATR 72-500",icao:"4601e9"},
+  {reg:"OH-ATF",type:"ATR 72-500",icao:"4601eb"},
+  {reg:"OH-ATG",type:"ATR 72-500",icao:"4601f4"},
+  {reg:"OH-ATH",type:"ATR 72-500",icao:"4601f5"},
+  {reg:"OH-ATI",type:"ATR 72-500",icao:"4601f6"},
+  {reg:"OH-ATJ",type:"ATR 72-500",icao:"4601f7"},
+  {reg:"OH-ATK",type:"ATR 72-500",icao:"460200"},
+  {reg:"OH-ATL",type:"ATR 72-500",icao:"4601f9"},
+  {reg:"OH-ATM",type:"ATR 72-500",icao:"460201"},
+  {reg:"OH-ATN",type:"ATR 72-500",icao:"460202"},
+  {reg:"OH-ATO",type:"ATR 72-500",icao:"460203"},
+  {reg:"OH-ATP",type:"ATR 72-500",icao:"460208"},
+  {reg:"OH-LKE",type:"Embraer E190",icao:"460127"},
+  {reg:"OH-LKF",type:"Embraer E190",icao:"460128"},
+  {reg:"OH-LKG",type:"Embraer E190",icao:"460129"},
+  {reg:"OH-LKH",type:"Embraer E190",icao:"46012a"},
+  {reg:"OH-LKI",type:"Embraer E190",icao:"46012b"},
+  {reg:"OH-LKK",type:"Embraer E190",icao:"46012d"},
+  {reg:"OH-LKL",type:"Embraer E190",icao:"46012e"},
+  {reg:"OH-LKM",type:"Embraer E190",icao:"46012f"},
+  {reg:"OH-LKN",type:"Embraer E190",icao:"460130"},
+  {reg:"OH-LKO",type:"Embraer E190",icao:"460131"},
+  {reg:"OH-LKP",type:"Embraer E190",icao:"460132"},
+  {reg:"OH-LKR",type:"Embraer E190",icao:"460134"}
+];
+var HL=60.3172,HO=24.9633,SM={},CF="all",SEL=null,DBG=false,LL=[];
+
+function dk(a,b,c,d){
+  var R=6371,dl=(c-a)*Math.PI/180,dn=(d-b)*Math.PI/180;
+  var x=Math.sin(dl/2)*Math.sin(dl/2)+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dn/2)*Math.sin(dn/2);
+  return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
+}
+
+function stOf(s){
+  if(!s) return {l:"Ei signaalia",c:"#475569",i:"o",g:"none"};
+  var gnd = s.gnd===true || s.alt==="ground";
+  if(gnd){
+    if(s.lat!=null && dk(s.lat,s.lon,HL,HO)<8) return {l:"Helsinki-Vantaa",c:"#38bdf8",i:"HEL",g:"hel"};
+    return {l:"Maassa - "+(s.country||"?"),c:"#64748b",i:"M",g:"gnd"};
+  }
+  var a = s.alt && s.alt!="ground" ? Math.round(s.alt)+" m" : "-";
+  var v = s.spd ? Math.round(s.spd*1.852)+" km/h" : "-";
+  return {l:"Lennossa "+a+" "+v,c:"#4ade80",i:"^",g:"air"};
+}
+
+function log(m){LL.push(m);if(DBG)renderLog();}
+function renderLog(){var b=document.getElementById("logbox");b.textContent=LL.join("\n");b.style.display="block";}
+
+function pfetch(url){
+  log("GET "+url);
+  return fetch(url).then(function(resp){
+    log("-> "+resp.status);
+    if(!resp.ok) throw new Error("HTTP "+resp.status);
+    return resp.json();
+  });
+}
+
+function pfetchProxy(url){
+  var proxy = "https://corsproxy.io/?"+encodeURIComponent(url);
+  log("PROXY "+proxy);
+  return fetch(proxy).then(function(resp){
+    log("-> "+resp.status);
+    if(!resp.ok) throw new Error("HTTP "+resp.status);
+    return resp.json();
+  });
+}
+
+function parseAdsb(d){
+  var map={};
+  (d.ac||[]).forEach(function(a){
+    var ic=(a.hex||"").toLowerCase().trim();
+    if(ic) map[ic]={callsign:(a.flight||"").trim()||null,country:"Finland",lon:a.lon,lat:a.lat,alt:a.alt_baro,gnd:a.alt_baro==="ground",spd:a.gs,track:a.track};
+  });
+  return map;
+}
+
+function parseOpensky(d){
+  var map={};
+  (d.states||[]).forEach(function(s){
+    map[s[0].toLowerCase()]={callsign:s[1]?s[1].trim():null,country:s[2],lon:s[5],lat:s[6],alt:s[7],gnd:s[8],spd:s[9],track:s[10]};
+  });
+  return map;
+}
+
+function doRefresh(){
+  LL.length=0;
+  var rb=document.getElementById("rbtn");
+  rb.disabled=true; rb.textContent="...";
+  document.getElementById("errbox").style.display="none";
+  document.getElementById("loading").style.display="block";
+  document.getElementById("content").style.display="none";
+
+  var icaos=FLEET.map(function(a){return a.icao;}).join(",");
+  var adsbUrl="https://api.adsb.lol/v2/icao/"+icaos;
+  var osUrl="https://opensky-network.org/api/states/all?icao24="+icaos;
+
+  pfetch(adsbUrl)
+    .catch(function(){return pfetchProxy(adsbUrl);})
+    .then(function(d){return parseAdsb(d);})
+    .catch(function(e1){
+      log("adsb.lol fail: "+e1.message);
+      return pfetch(osUrl)
+        .catch(function(){return pfetchProxy(osUrl);})
+        .then(function(d){return parseOpensky(d);});
+    })
+    .then(function(map){
+      SM=map;
+      var n=new Date();
+      document.getElementById("ts").innerHTML='<span class="dot"></span>'+n.toLocaleTimeString("fi-FI");
+      document.getElementById("loading").style.display="none";
+      document.getElementById("content").style.display="block";
+      var inAir=FLEET.filter(function(a){return SM[a.icao]&&!SM[a.icao].gnd;}).length;
+      var atHel=FLEET.filter(function(a){var s=SM[a.icao];return s&&s.gnd&&s.lat!=null&&dk(s.lat,s.lon,HL,HO)<8;}).length;
+      var noSig=FLEET.filter(function(a){return !SM[a.icao];}).length;
+      document.getElementById("sn-a").textContent=inAir;
+      document.getElementById("sn-h").textContent=atHel;
+      document.getElementById("sn-n").textContent=noSig;
+      renderGrid();
+    })
+    .catch(function(e){
+      document.getElementById("errbox").textContent="Virhe: "+e.message;
+      document.getElementById("errbox").style.display="block";
+      document.getElementById("loading").style.display="none";
+      document.getElementById("content").style.display="block";
+      renderGrid();
+    })
+    .then(function(){
+      rb.disabled=false; rb.textContent="Paivita";
+      if(DBG) renderLog();
+    });
+}
+
+function setF(btn){
+  CF=btn.dataset.f;
+  document.querySelectorAll("[data-f]").forEach(function(b){b.classList.toggle("on",b===btn);});
+  renderGrid();
+}
+
+function renderGrid(){
+  var fl=FLEET.map(function(a){return {reg:a.reg,type:a.type,icao:a.icao,s:SM[a.icao]||null,st:stOf(SM[a.icao]||null)};});
+  var shown=CF==="all"?fl:fl.filter(function(a){return a.st.g===CF;});
+  document.getElementById("cnt").textContent=shown.length+" / "+fl.length+" konetta";
+  document.getElementById("grid").innerHTML=shown.map(function(a){
+    var glow=a.s&&!a.s.gnd?"box-shadow:0 0 7px "+a.st.c+";":" ";
+    var sel=SEL===a.reg?" sel":"";
+    return '<div class="card'+sel+'" onclick="selAc(\''+a.reg+'\')">'+
+      '<div class="ctop"><div><div class="creg">'+a.reg+'</div><div class="ctype">'+a.type+'</div></div>'+
+      '<span style="color:'+a.st.c+';font-size:14px">'+a.st.i+'</span></div>'+
+      '<div class="cst"><span style="width:7px;height:7px;border-radius:50%;background:'+a.st.c+';flex-shrink:0;'+glow+'display:inline-block"></span>'+
+      '<span style="font-size:11px;color:'+a.st.c+'">'+a.st.l+'</span></div>'+
+      (a.s&&a.s.callsign?'<div class="ccs">'+a.s.callsign+'</div>':'')+
+      '</div>';
+  }).join("");
+}
+
+function selAc(reg){
+  if(SEL===reg){closeD();return;}
+  SEL=reg;
+  var a=null;
+  for(var i=0;i<FLEET.length;i++){if(FLEET[i].reg===reg){a=FLEET[i];break;}}
+  var s=SM[a.icao]||null, sv=stOf(s);
+  document.getElementById("d-reg").textContent=reg;
+  document.getElementById("d-type").textContent=a.type;
+  document.getElementById("d-fr24").href="https://www.flightradar24.com/"+reg;
+  if(s){
+    var rows=[
+      ["Tila",sv.l],
+      ["Callsign",s.callsign||"-"],
+      ["Korkeus",s.alt&&s.alt!="ground"?Math.round(Number(s.alt))+" m":"-"],
+      ["Nopeus",s.spd?Math.round(Number(s.spd)*1.852)+" km/h":"-"],
+      ["Suunta",s.track!=null?Math.round(Number(s.track))+"&deg;":"-"],
+      ["HEL km",s.lat!=null?Math.round(dk(s.lat,s.lon,HL,HO))+" km":"-"]
+    ];
+    document.getElementById("d-rows").innerHTML=rows.map(function(r){
+      return '<div class="dr"><span style="color:#475569">'+r[0]+'</span><span style="color:#e2e8f0">'+r[1]+'</span></div>';
+    }).join("");
+  }else{
+    document.getElementById("d-rows").innerHTML='<div class="nosig">Ei ADS-B signaalia.<br>Voi olla huollossa.</div>';
+  }
+  document.getElementById("detcol").style.display="block";
+  renderGrid();
+}
+
+function closeD(){SEL=null;document.getElementById("detcol").style.display="none";renderGrid();}
+function toggleDbg(){DBG=!DBG;document.getElementById("dbtn").classList.toggle("on",DBG);if(DBG&&LL.length)renderLog();else document.getElementById("logbox").style.display="none";}
+
+doRefresh();
+setInterval(doRefresh,60000);
+</script>
+</body>
+</html>
